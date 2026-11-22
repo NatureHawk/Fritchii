@@ -1,6 +1,10 @@
 # SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# Script mode (cmake -P) starts with no policies set: without this, while(TRUE) below is an error
+# (CMP0012 OLD) and the skip blocks are hashed as if they were code, a stamp no release carries.
+cmake_minimum_required(VERSION 3.31)
+
 # Build-time script (cmake -P): hashes the sources that decide what the GPU driver compiles for a
 # pipeline (the shader recompiler, pipeline creation, the precompile step) into NX2_SHADER_STAMP.
 # "Preparing shaders" stamps its work with it instead of the release version (2026-11-10: every
