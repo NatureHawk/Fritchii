@@ -45,6 +45,7 @@
 #include "common/memory_detect.h"
 #include "common/shutdown_progress.h"
 #include "common/thread.h"
+#include "common/thread_pinning.h"
 #include "common/thread_worker.h"
 #include "core/core.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
@@ -7756,8 +7757,23 @@ void PipelineCache::PreparePrecompiled(const std::filesystem::path& base_dir,
         const char* value = std::getenv("EDEN_NX2_PRECOMPILE_WHILE_PLAYING");
         return value != nullptr && value[0] == '1';
     }();
-    const bool hold_beside_game = IntelDriverCache(device) && !while_playing;
-    // FRITCHII_PREP_THROTTLE=2: fewer threads beside the game, and on Intel one instead of none.
+    // The same with fewer performance cores than thread pinning needs (MinAutoCores), whatever the
+    // GPU: an i7-1360P (4P + 8E, at 93 C) with a GTX 1660 Ti played at 42-54 ms a frame while
+    // Prepare Shaders Now ran on 4 threads beside the game. Unknown (0) keeps the old behaviour.
+    static const bool few_fast_cores = [] {
+        const std::size_t cores = Common::PerformanceCoreCount();
+        return cores != 0 && cores < Common::ThreadPinning::MinAutoCores;
+    }();
+    const bool hold_beside_game = (IntelDriverCache(device) || few_fast_cores) && !while_playing;
+    if (hold_beside_game && !IntelDriverCache(device)) {
+        LOG_INFO(Render_Vulkan,
+                 "Precompiled pipelines: built only while paused or from Prepare Shaders Now "
+                 "({} performance cores, under {}; EDEN_NX2_PRECOMPILE_WHILE_PLAYING=1 builds "
+                 "beside the game anyway)",
+                 Common::PerformanceCoreCount(), Common::ThreadPinning::MinAutoCores);
+    }
+    // FRITCHII_PREP_THROTTLE=2: fewer threads beside the game, and where it is held (Intel, few
+    // performance cores) one instead of none.
     const int throttle_mode = PrepThrottleMode();
     const auto allowed_threads = [&](bool full) -> size_t {
         if (full) {

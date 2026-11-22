@@ -244,6 +244,9 @@ void LogCpuPlacement();
 /// ThreadPinning already gives the GPU threads performance cores of their own on this CPU, so
 /// pinning them adds nothing.
 [[nodiscard]] bool GpuThreadsHaveOwnCores();
+/// Windows: the physical cores of the fastest efficiency class in processor group 0 (every core on
+/// a CPU that is not hybrid; 4 on an i7-1360P, 4P + 8E). 0 where unknown, and elsewhere.
+[[nodiscard]] std::size_t PerformanceCoreCount();
 
 /// Windows hybrid CPUs, from HostTiming's 10 s report: `late_1ms` guest timers ran 1 ms or more
 /// late in `seconds`. Logs one "Hybrid placement in 10 s:" line (mode, time-critical threads,

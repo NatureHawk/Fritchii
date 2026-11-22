@@ -1206,6 +1206,18 @@ bool GpuThreadsHaveOwnCores() {
 #endif
 }
 
+std::size_t PerformanceCoreCount() {
+#ifdef _WIN32
+    // Counted even when nothing is pinned: MakePlan fills performance_cores before it decides.
+    static const std::size_t cores =
+        ThreadPinning::MakePlan(ReadPinningTopology(), ThreadPinning::Mode::Auto)
+            .performance_cores;
+    return cores;
+#else
+    return 0;
+#endif
+}
+
 u64 BackgroundWorkCpuMask() {
 #ifdef _WIN32
     const u64 pinned = pinned_gpu_mask.load(std::memory_order_relaxed);
